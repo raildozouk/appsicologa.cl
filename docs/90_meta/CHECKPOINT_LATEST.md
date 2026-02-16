@@ -1,6 +1,6 @@
 # CHECKPOINT_LATEST — appsicologa.cl
-TS_LOCAL: 2026-02-16T13:22:50-03:00
-TS_UTC: 2026-02-16T16:22:50+00:00
+TS_LOCAL: 2026-02-16T13:27:27-03:00
+TS_UTC: 2026-02-16T16:27:27+00:00
 
 ## Serviços
 - nginx: active
@@ -150,10 +150,10 @@ Current DNS Server: 100.100.100.100
 ### resolvectl query (www-appsicologa.brotherdrive.app)
 www-appsicologa.brotherdrive.app: 172.67.220.39             -- link: enp2s0
                                   104.21.94.55              -- link: enp2s0
-                                  2606:4700:3033::ac43:dc27 -- link: enp2s0
                                   2606:4700:3030::6815:5e37 -- link: enp2s0
+                                  2606:4700:3033::ac43:dc27 -- link: enp2s0
 
--- Information acquired via protocol DNS in 1.5ms.
+-- Information acquired via protocol DNS in 1.6ms.
 -- Data is authenticated: no; Data was acquired via local or encrypted transport: no
 -- Data from: cache
 
@@ -164,12 +164,12 @@ www-appsicologa.brotherdrive.app: 172.67.220.39             -- link: enp2s0
 104.21.94.55    STREAM 
 104.21.94.55    DGRAM  
 104.21.94.55    RAW    
-2606:4700:3033::ac43:dc27 STREAM 
-2606:4700:3033::ac43:dc27 DGRAM  
-2606:4700:3033::ac43:dc27 RAW    
 2606:4700:3030::6815:5e37 STREAM 
 2606:4700:3030::6815:5e37 DGRAM  
 2606:4700:3030::6815:5e37 RAW    
+2606:4700:3033::ac43:dc27 STREAM 
+2606:4700:3033::ac43:dc27 DGRAM  
+2606:4700:3033::ac43:dc27 RAW    
 
 ## Publicação provisória (smoke)
 - https://appsicologa.brotherdrive.app/ -> HTTP/2 200 
@@ -177,21 +177,26 @@ www-appsicologa.brotherdrive.app: 172.67.220.39             -- link: enp2s0
 
 ## Próximo passo (NEXT_STEP.md)
 # NEXT STEP — appsicologa (atualize este arquivo sempre)
+TS_LOCAL: 2026-02-16T13:27:27-03:00
+TS_UTC: 2026-02-16T16:27:27+00:00
 
 ## Regra de retomada
 Quando o SSH cair: reconectar e seguir exatamente o que está aqui.
 
-## Status atual
-- [x] DNS “definitivo” via NetworkManager + systemd-resolved (enp2s0 com 1.1.1.1/1.0.0.1)
-- [ ] Migrar appsicologa.cl para Cloudflare (zona própria) e remover hostnames provisórios (*.brotherdrive.app)
-- [ ] Depois: HTTPS end-to-end (origin) se/quando necessário
+## Decisão (agora)
+- Vamos usar o domínio **brotherdrive.app** (já está no Cloudflare).
+- Hostnames oficiais do appsicologa neste momento:
+  - https://appsicologa.brotherdrive.app
+  - https://www-appsicologa.brotherdrive.app
+- Nota: **www.appsicologa.brotherdrive.app** (2 níveis) NÃO entra no Universal SSL padrão.
 
 ## Próximo passo real (agora)
-1) Migrar domínio appsicologa.cl para Cloudflare (nameservers)
-2) Criar hostnames no tunnel: appsicologa.cl + www.appsicologa.cl
-3) Ajustar Nginx server_name (já está pronto)
+1) Canonical: decidir e aplicar redirect 301 (ex: appsicologa.brotherdrive.app -> www-appsicologa.brotherdrive.app)
+2) Hardening básico:
+   - Cloudflare: Always Use HTTPS (rule) + cache rules se precisar
+   - Nginx: headers mínimos e logs OK
+3) Depois (quando quiser): migrar appsicologa.cl para Cloudflare (zona própria) e trocar hostnames
 
 ## Git status (porcelain)
-?? docs/90_meta/NEXT_STEP.md
-?? scripts/
+ M docs/90_meta/NEXT_STEP.md
 
