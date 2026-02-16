@@ -12,9 +12,18 @@ OUT="docs/90_meta/CHECKPOINT_LATEST.md"
 NEXT="docs/90_meta/NEXT_STEP.md"
 mkdir -p docs/90_meta
 
-H="www-appsicologa.brotherdrive.app"
-U1="https://appsicologa.brotherdrive.app/"
-U2="https://www-appsicologa.brotherdrive.app/"
+HOST_A="appsicologa.brotherdrive.app"
+HOST_W="www-appsicologa.brotherdrive.app"
+URL_A="https://${HOST_A}/"
+URL_W="https://${HOST_W}/"
+
+headers_edge() {
+  local url="$1"
+  curl -sS -I --max-time 12 "$url" 2>/dev/null \
+    | awk 'BEGIN{IGNORECASE=1}
+      /^HTTP\/|^location:|^strict-transport-security:|^content-security-policy-report-only:|^content-security-policy:|^x-content-type-options:|^x-frame-options:|^referrer-policy:|^permissions-policy:/{print}' \
+    | sed 's/\r$//' || true
+}
 
 tmp="$(mktemp)"
 {
@@ -33,54 +42,58 @@ tmp="$(mktemp)"
   echo "### /etc/resolv.conf"
   ls -l /etc/resolv.conf 2>/dev/null || true
   readlink -f /etc/resolv.conf 2>/dev/null || true
-  sed -n "1,20p" /etc/resolv.conf 2>/dev/null || true
+  sed -n "1,8p" /etc/resolv.conf 2>/dev/null || true
   echo
-
+  echo "### nmcli (enp2s0)"
   if command -v nmcli >/dev/null 2>&1; then
-    echo "### nmcli (enp2s0)"
     nmcli -g GENERAL.CONNECTION,GENERAL.STATE,IP4.GATEWAY,IP4.DNS dev show enp2s0 2>/dev/null || true
-    echo
   else
     echo "- nmcli: (não encontrado)"
-    echo
   fi
-
+  echo
+  echo "### resolvectl status (Global - resumo)"
   if command -v resolvectl >/dev/null 2>&1; then
-    echo "### resolvectl status (Global)"
-    resolvectl status 2>/dev/null | sed -n "1,60p" || true
+    resolvectl status 2>/dev/null | sed -n "1,20p" || true
     echo
-    echo "### resolvectl status (enp2s0)"
-    resolvectl status enp2s0 2>/dev/null | sed -n "1,80p" || true
+    echo "### resolvectl status (enp2s0 - resumo)"
+    resolvectl status enp2s0 2>/dev/null | sed -n "1,20p" || true
     echo
-    echo "### resolvectl status (tailscale0)"
-    resolvectl status tailscale0 2>/dev/null | sed -n "1,80p" || true
-    echo
-    echo "### resolvectl query ($H)"
-    resolvectl query "$H" 2>/dev/null || true
-    echo
-    echo "### getent ahosts ($H)"
-    getent ahosts "$H" 2>/dev/null || true
-    echo
+    echo "### resolvectl status (tailscale0 - resumo)"
+    resolvectl status tailscale0 2>/dev/null | sed -n "1,20p" || true
   else
     echo "- resolvectl: (não encontrado)"
-    echo
   fi
+  echo
 
   echo "## Publicação provisória (smoke)"
-  echo "- $U1 -> $(curl -sS -I --max-time 12 "$U1" 2>/dev/null | head -n1 | tr -d "\r" || echo FAIL)"
-  echo "- $U2 -> $(curl -sS -I --max-time 12 "$U2" 2>/dev/null | head -n1 | tr -d "\r" || echo FAIL)"
+  for u in "$URL_A" "$URL_W"; do
+    echo "- $u -> $(curl -sS -I --max-time 12 "$u" 2>/dev/null | head -n1 | tr -d "\r" || echo "FAIL")"
+  done
+  echo
+
+  echo "## EDGE headers (auditável)"
+  echo "### $URL_A"
+  headers_edge "$URL_A"
+  echo
+  echo "### $URL_W"
+  headers_edge "$URL_W"
   echo
 
   echo "## Próximo passo (NEXT_STEP.md)"
   if [ -f "$NEXT" ]; then
-    sed -n "1,80p" "$NEXT" || true
+    sed -n "1,80p" "$NEXT"
   else
     echo "- (não existe: $NEXT)"
   fi
   echo
 
   echo "## Git status (porcelain)"
-  git status --porcelain=v1 2>/dev/null || true
+  gs="$(git status --porcelain=v1 2>/dev/null || true)"
+  if [ -n "$gs" ]; then
+    echo "$gs"
+  else
+    echo "(clean)"
+  fi
   echo
 } > "$tmp"
 
