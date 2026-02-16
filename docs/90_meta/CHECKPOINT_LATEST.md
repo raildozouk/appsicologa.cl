@@ -1,6 +1,6 @@
 # CHECKPOINT_LATEST — appsicologa.cl
-TS_LOCAL: 2026-02-16T18:02:44-03:00
-TS_UTC: 2026-02-16T21:02:44+00:00
+TS_LOCAL: 2026-02-16T18:12:44-03:00
+TS_UTC: 2026-02-16T21:12:44+00:00
 
 ## Serviços
 - nginx: active
@@ -133,5 +133,5 @@ Quando o SSH cair: reconectar e seguir exatamente o que está aqui.
 
 
 ## Git status (porcelain)
- M docs/90_meta/CHECKPOINT_LATEST.md
+(clean)
 
