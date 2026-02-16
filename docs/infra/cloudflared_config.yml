@@ -1,0 +1,19 @@
+tunnel: appsicologa
+credentials-file: /etc/cloudflared/4e254e05-a9be-4636-8a4c-a7cc78fbf5f3.json
+
+ingress:
+  - hostname: appsicologa.brotherdrive.app
+    service: http://127.0.0.1:80
+
+  # Cloudflare Universal SSL cobre *.brotherdrive.app (1 nível),
+  # mas NÃO cobre www.appsicologa.brotherdrive.app (2 níveis).
+  - hostname: www-appsicologa.brotherdrive.app
+    service: http://127.0.0.1:80
+
+  # (futuro) quando appsicologa.cl estiver no Cloudflare:
+  - hostname: appsicologa.cl
+    service: http://127.0.0.1:80
+  - hostname: www.appsicologa.cl
+    service: http://127.0.0.1:80
+
+  - service: http_status:404

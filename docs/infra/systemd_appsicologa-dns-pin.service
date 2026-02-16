@@ -1,0 +1,13 @@
+[Unit]
+Description=appsicologa — Pin DNS (Cloudflare) for enp2s0
+After=network-online.target systemd-resolved.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/resolvectl dns enp2s0 1.1.1.1 1.0.0.1
+ExecStart=/usr/bin/resolvectl flush-caches
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
