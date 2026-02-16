@@ -1,6 +1,6 @@
 # CHECKPOINT_LATEST — appsicologa.cl
-TS_LOCAL: 2026-02-16T14:12:42-03:00
-TS_UTC: 2026-02-16T17:12:42+00:00
+TS_LOCAL: 2026-02-16T14:22:43-03:00
+TS_UTC: 2026-02-16T17:22:43+00:00
 
 ## Serviços
 - nginx: active
@@ -148,28 +148,28 @@ Current DNS Server: 100.100.100.100
                     ~98.100.in-addr.arpa ~99.100.in-addr.arpa ~ts.net
 
 ### resolvectl query (www-appsicologa.brotherdrive.app)
-www-appsicologa.brotherdrive.app: 172.67.220.39             -- link: enp2s0
-                                  104.21.94.55              -- link: enp2s0
+www-appsicologa.brotherdrive.app: 104.21.94.55              -- link: enp2s0
+                                  172.67.220.39             -- link: enp2s0
                                   2606:4700:3033::ac43:dc27 -- link: enp2s0
                                   2606:4700:3030::6815:5e37 -- link: enp2s0
 
--- Information acquired via protocol DNS in 10.3ms.
+-- Information acquired via protocol DNS in 11.2ms.
 -- Data is authenticated: no; Data was acquired via local or encrypted transport: no
 -- Data from: network
 
 ### getent ahosts (www-appsicologa.brotherdrive.app)
-172.67.220.39   STREAM www-appsicologa.brotherdrive.app
-172.67.220.39   DGRAM  
-172.67.220.39   RAW    
-104.21.94.55    STREAM 
+104.21.94.55    STREAM www-appsicologa.brotherdrive.app
 104.21.94.55    DGRAM  
 104.21.94.55    RAW    
-2606:4700:3030::6815:5e37 STREAM 
-2606:4700:3030::6815:5e37 DGRAM  
-2606:4700:3030::6815:5e37 RAW    
+172.67.220.39   STREAM 
+172.67.220.39   DGRAM  
+172.67.220.39   RAW    
 2606:4700:3033::ac43:dc27 STREAM 
 2606:4700:3033::ac43:dc27 DGRAM  
 2606:4700:3033::ac43:dc27 RAW    
+2606:4700:3030::6815:5e37 STREAM 
+2606:4700:3030::6815:5e37 DGRAM  
+2606:4700:3030::6815:5e37 RAW    
 
 ## Publicação provisória (smoke)
 - https://appsicologa.brotherdrive.app/ -> HTTP/2 301 
