@@ -1,6 +1,6 @@
 # CHECKPOINT_LATEST — appsicologa.cl
-TS_LOCAL: 2026-02-17T16:02:52-03:00
-TS_UTC: 2026-02-17T19:02:52+00:00
+TS_LOCAL: 2026-02-17T16:12:52-03:00
+TS_UTC: 2026-02-17T19:12:52+00:00
 
 ## Serviços
 - nginx: active
@@ -119,6 +119,7 @@ TS_UTC: 2026-02-17T14:06:03+00:00
  M apps/api/README.md
  M apps/api/package.json
 ?? .backups/
+?? apps/api/.env.example
 ?? apps/api/.prettierrc
 ?? apps/api/eslint.config.mjs
 ?? apps/api/nest-cli.json
