@@ -1,6 +1,6 @@
 # CHECKPOINT_LATEST — appsicologa.cl
-TS_LOCAL: 2026-02-17T17:12:53-03:00
-TS_UTC: 2026-02-17T20:12:53+00:00
+TS_LOCAL: 2026-02-17T17:22:55-03:00
+TS_UTC: 2026-02-17T20:22:55+00:00
 
 ## Serviços
 - nginx: active
@@ -118,7 +118,9 @@ TS_UTC: 2026-02-17T14:06:03+00:00
 ## Git status (porcelain)
  M apps/api/README.md
  M apps/api/package.json
+ M apps/web/package.json
 ?? .backups/
+?? _bak/
 ?? apps/api/.env.example
 ?? apps/api/.prettierrc
 ?? apps/api/eslint.config.mjs
@@ -127,5 +129,10 @@ TS_UTC: 2026-02-17T14:06:03+00:00
 ?? apps/api/test/
 ?? apps/api/tsconfig.build.json
 ?? apps/api/tsconfig.json
+?? apps/web/.env.local
+?? apps/web/app/
+?? apps/web/next-env.d.ts
+?? apps/web/next.config.mjs
+?? apps/web/tsconfig.json
 ?? pnpm-lock.yaml
 
