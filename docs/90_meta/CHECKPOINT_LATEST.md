@@ -1,6 +1,6 @@
 # CHECKPOINT_LATEST — appsicologa.cl
-TS_LOCAL: 2026-02-16T21:52:45-03:00
-TS_UTC: 2026-02-17T00:52:45+00:00
+TS_LOCAL: 2026-02-16T22:02:45-03:00
+TS_UTC: 2026-02-17T01:02:45+00:00
 
 ## Serviços
 - nginx: active
@@ -85,12 +85,6 @@ Current DNS Server: 100.100.100.100
 ### https://appsicologa.brotherdrive.app/
 HTTP/2 301 
 location: https://www-appsicologa.brotherdrive.app/
-content-security-policy-report-only: default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; object-src 'none'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; script-src 'self'; connect-src 'self' https:; upgrade-insecure-requests
-permissions-policy: camera=(), microphone=(), geolocation=()
-referrer-policy: strict-origin-when-cross-origin
-strict-transport-security: max-age=86400
-x-content-type-options: nosniff
-x-frame-options: SAMEORIGIN
 
 ### https://www-appsicologa.brotherdrive.app/
 HTTP/2 200 
