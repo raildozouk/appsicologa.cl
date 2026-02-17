@@ -1,6 +1,6 @@
 # CHECKPOINT_LATEST — appsicologa.cl
-TS_LOCAL: 2026-02-16T21:08:26-03:00
-TS_UTC: 2026-02-17T00:08:26+00:00
+TS_LOCAL: 2026-02-16T21:12:45-03:00
+TS_UTC: 2026-02-17T00:12:45+00:00
 
 ## Serviços
 - nginx: active
@@ -9,7 +9,7 @@ TS_UTC: 2026-02-17T00:08:26+00:00
 
 ## DNS (systemd-resolved + NetworkManager)
 ### /etc/resolv.conf
-lrwxrwxrwx 1 root root 39 Aug  5  2025 /etc/resolv.conf -> ../run/systemd/resolve/stub-resolv.conf
+lrwxrwxrwx 1 root root 39 ago  5  2025 /etc/resolv.conf -> ../run/systemd/resolve/stub-resolv.conf
 /run/systemd/resolve/stub-resolv.conf
 # This is /run/systemd/resolve/stub-resolv.conf managed by man:systemd-resolved(8).
 # Do not edit.
