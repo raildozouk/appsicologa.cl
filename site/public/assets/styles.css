@@ -1,0 +1,12 @@
+:root{--bg:#0b0f14;--card:#0f1620;--text:#e7eef7;--muted:#a9b6c6;--accent:#7dd3fc;}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:radial-gradient(1200px 600px at 20% 10%, #152233 0%, var(--bg) 60%);color:var(--text);font:16px/1.55 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif}
+.wrap{min-height:100%;display:flex;align-items:center;justify-content:center;padding:32px}
+.card{width:min(860px,100%);background:rgba(15,22,32,.72);border:1px solid rgba(125,211,252,.14);border-radius:18px;box-shadow:0 10px 40px rgba(0,0,0,.35);padding:28px}
+.h{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.badge{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);border:1px solid rgba(125,211,252,.35);padding:6px 10px;border-radius:999px}
+h1{margin:10px 0 6px;font-size:28px}
+p{margin:10px 0;color:var(--muted)}
+a{color:var(--accent);text-decoration:none}
+small{color:rgba(169,182,198,.8)}
