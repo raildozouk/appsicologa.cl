@@ -1,0 +1,12 @@
+{
+  "name": "@appsicologa/api",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node -e \"console.log(\\\"TODO: scaffold NestJS here (Codex)\\\")\"",
+    "lint": "node -e \"console.log(\\\"TODO: eslint\\\")\"",
+    "test": "node -e \"console.log(\\\"TODO: tests\\\")\"",
+    "typecheck": "node -e \"console.log(\\\"TODO: tsc\\\")\""
+  }
+}

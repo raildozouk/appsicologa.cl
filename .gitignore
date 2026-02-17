@@ -2,3 +2,14 @@
 # ignores (generated artifacts)
 docs/00_maestro/MAESTRO_EXTRACT_*.txt
 *.bak.*
+infra/dev/.env
+# node/tooling
+node_modules/
+.pnpm-store/
+.next/
+dist/
+coverage/
+.turbo/
+*.log
+# local env
+.env

@@ -1,0 +1,12 @@
+{
+  "name": "@appsicologa/web",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node -e \"console.log(\\\"TODO: scaffold Next.js here (Codex)\\\")\"",
+    "lint": "node -e \"console.log(\\\"TODO: eslint\\\")\"",
+    "test": "node -e \"console.log(\\\"TODO: tests\\\")\"",
+    "typecheck": "node -e \"console.log(\\\"TODO: tsc\\\")\""
+  }
+}

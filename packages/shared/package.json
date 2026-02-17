@@ -1,0 +1,11 @@
+{
+  "name": "@appsicologa/shared",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "lint": "node -e \"console.log(\\\"TODO: eslint\\\")\"",
+    "test": "node -e \"console.log(\\\"TODO: tests\\\")\"",
+    "typecheck": "node -e \"console.log(\\\"TODO: tsc\\\")\""
+  }
+}
