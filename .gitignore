@@ -1,0 +1,4 @@
+
+# ignores (generated artifacts)
+docs/00_maestro/MAESTRO_EXTRACT_*.txt
+*.bak.*
