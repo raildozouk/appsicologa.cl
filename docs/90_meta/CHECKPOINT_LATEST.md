@@ -1,6 +1,6 @@
 # CHECKPOINT_LATEST — appsicologa.cl
-TS_LOCAL: 2026-02-17T19:22:53-03:00
-TS_UTC: 2026-02-17T22:22:53+00:00
+TS_LOCAL: 2026-02-17T19:32:53-03:00
+TS_UTC: 2026-02-17T22:32:53+00:00
 
 ## Serviços
 - nginx: active
@@ -135,4 +135,5 @@ TS_UTC: 2026-02-17T14:06:03+00:00
 ?? apps/web/next.config.mjs
 ?? apps/web/tsconfig.json
 ?? pnpm-lock.yaml
+?? var/
 
