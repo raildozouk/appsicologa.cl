@@ -1,6 +1,6 @@
 # CHECKPOINT_LATEST — appsicologa.cl
-TS_LOCAL: 2026-02-18T00:43:56-03:00
-TS_UTC: 2026-02-18T03:43:56+00:00
+TS_LOCAL: 2026-02-18T00:53:56-03:00
+TS_UTC: 2026-02-18T03:53:56+00:00
 
 ## Serviços
 - nginx: active
@@ -116,30 +116,6 @@ TS_UTC: 2026-02-17T14:06:03+00:00
 - ChatGPT guia arquitetura/ordem/checklists.
 
 ## Git status (porcelain)
-M  .gitignore
-A  apps/api/.env.example
-A  apps/api/.prettierrc
-M  apps/api/README.md
-A  apps/api/eslint.config.mjs
-A  apps/api/nest-cli.json
-M  apps/api/package.json
-A  apps/api/src/app.controller.spec.ts
-A  apps/api/src/app.controller.ts
-A  apps/api/src/app.module.ts
-A  apps/api/src/app.service.ts
-A  apps/api/src/main.ts
-A  apps/api/test/app.e2e-spec.ts
-A  apps/api/test/jest-e2e.json
-A  apps/api/tsconfig.build.json
-A  apps/api/tsconfig.json
-A  apps/web/.env.example
-A  apps/web/app/globals.css
-A  apps/web/app/layout.tsx
-A  apps/web/app/page.tsx
-A  apps/web/next-env.d.ts
-A  apps/web/next.config.mjs
-M  apps/web/package.json
-A  apps/web/tsconfig.json
-A  bin/devctl
-A  pnpm-lock.yaml
+?? ")\"; echo \"TS_UTC=$(date -u -Is)\"; echo"
+?? "padr\303\265es suspeitos acima (revisar)\" || "
 
