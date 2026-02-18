@@ -13,3 +13,11 @@ coverage/
 *.log
 # local env
 .env
+# local-only (dev runtime / temp)
+/var/
+/_bak/
+/.backups/
+**/.env.local
+**/.env.*.local
+# pidfiles (if ever outside /var)
+*.pid

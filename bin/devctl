@@ -1,0 +1,252 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+RUN_DIR="$ROOT/var/run"
+LOG_DIR="$ROOT/var/log"
+mkdir -p "$RUN_DIR" "$LOG_DIR"
+
+WEB_PORT=3000
+API_PORT=3001
+
+WEB_PIDFILE="$RUN_DIR/web.dev.pid"
+API_PIDFILE="$RUN_DIR/api.dev.pid"
+WEB_LPIDFILE="$RUN_DIR/web.listen.pid"
+API_LPIDFILE="$RUN_DIR/api.listen.pid"
+
+tsu() { date -u +%Y%m%dT%H%M%SZ; }
+log() { printf "%s %s\n" "$(date -Is)" "$*"; }
+have() { command -v "$1" >/dev/null 2>&1; }
+
+pid_alive() {
+  local pid="${1:-}"
+  [[ -n "$pid" ]] && ps -p "$pid" >/dev/null 2>&1
+}
+
+pgid_of() {
+  local pid="${1:-}"
+  ps -o pgid= -p "$pid" 2>/dev/null | tr -d " " || true
+}
+
+is_listening() {
+  local port="$1"
+  ss -ltnp 2>/dev/null | grep -qE ":${port}\s"
+}
+
+listener_pid() {
+  local port="$1"
+  ss -ltnp 2>/dev/null | grep -E ":${port}\s" | sed -n "s/.*pid=\\([0-9]\\+\\).*/\\1/p" | head -n1 || true
+}
+
+cmd_of() {
+  local pid="${1:-}"
+  ps -p "$pid" -o cmd= 2>/dev/null || true
+}
+
+write_pidfile() {
+  local file="$1"
+  local pid="$2"
+  local tmp="${file}.tmp.$$"
+  printf "%s\n" "$pid" > "$tmp"
+  mv -f "$tmp" "$file"
+}
+
+kill_group() {
+  local pid="${1:-}"
+  if ! pid_alive "$pid"; then return 0; fi
+
+  local pgid; pgid="$(pgid_of "$pid")"
+  if [[ -z "$pgid" ]]; then
+    kill -TERM "$pid" 2>/dev/null || true
+  else
+    kill -TERM -"${pgid}" 2>/dev/null || true
+  fi
+}
+
+# Port-fallback kill, but only if cmd matches expected pattern (safety)
+safe_kill_by_port() {
+  local svc="$1" port="$2" pattern="$3"
+  local lpid; lpid="$(listener_pid "$port")"
+  if [[ -z "$lpid" ]]; then
+    log "[OK] $svc not listening on :$port"
+    return 0
+  fi
+
+  local cmd; cmd="$(cmd_of "$lpid")"
+  if ! grep -Eq "$pattern" <<<"$cmd"; then
+    log "[WARN] $svc :$port pid=$lpid cmd does NOT match expected -> skip port-kill"
+    log "       cmd=$cmd"
+    return 0
+  fi
+
+  log "[STOP] $svc killing by port :$port pid=$lpid"
+  kill_group "$lpid"
+}
+
+spawn_detached() {
+  # args: workdir logfile pidfile cmd_string_for_bash_lc
+  local workdir="$1" logfile="$2" pidfile="$3" cmd="$4"
+
+  (
+    cd "$workdir"
+    if have setsid; then
+      nohup setsid bash -lc "$cmd" >"$logfile" 2>&1 < /dev/null &
+    else
+      nohup bash -lc "$cmd" >"$logfile" 2>&1 < /dev/null &
+    fi
+    echo $! > "$pidfile"
+  )
+}
+
+wait_listen() {
+  local port="$1"
+  for _ in {1..50}; do
+    is_listening "$port" && return 0
+    sleep 0.2
+  done
+  return 1
+}
+
+start_web() {
+  local port="$WEB_PORT"
+  local logfile="$LOG_DIR/web.dev.$(tsu).log"
+
+  if is_listening "$port"; then
+    local lpid; lpid="$(listener_pid "$port")"
+    [[ -n "$lpid" ]] && write_pidfile "$WEB_LPIDFILE" "$lpid"
+    log "[OK] web already listening on :$port (listener pid=${lpid:-?})"
+    return 0
+  fi
+
+  log "[START] web -> pnpm dev (log=$logfile)"
+  spawn_detached "$ROOT/apps/web" "$logfile" "$WEB_PIDFILE" "exec pnpm dev"
+
+  if wait_listen "$port"; then
+    local lpid; lpid="$(listener_pid "$port")"
+    [[ -n "$lpid" ]] && write_pidfile "$WEB_LPIDFILE" "$lpid"
+    log "[OK] web up http://127.0.0.1:$port (devpid=$(cat "$WEB_PIDFILE" 2>/dev/null || echo "?") listener=${lpid:-?})"
+  else
+    log "[ERR] web did not bind :$port. Tail log:"
+    tail -n 120 "$logfile" || true
+    return 1
+  fi
+}
+
+start_api() {
+  local port="$API_PORT"
+  local logfile="$LOG_DIR/api.dev.$(tsu).log"
+
+  if is_listening "$port"; then
+    local lpid; lpid="$(listener_pid "$port")"
+    [[ -n "$lpid" ]] && write_pidfile "$API_LPIDFILE" "$lpid"
+    log "[OK] api already listening on :$port (listener pid=${lpid:-?})"
+    return 0
+  fi
+
+  log "[START] api -> pnpm dev (log=$logfile)"
+  spawn_detached "$ROOT/apps/api" "$logfile" "$API_PIDFILE" "exec pnpm dev"
+
+  if wait_listen "$port"; then
+    local lpid; lpid="$(listener_pid "$port")"
+    [[ -n "$lpid" ]] && write_pidfile "$API_LPIDFILE" "$lpid"
+    log "[OK] api up http://127.0.0.1:$port/v1 (devpid=$(cat "$API_PIDFILE" 2>/dev/null || echo "?") listener=${lpid:-?})"
+    curl -sS -m 2 -o /dev/null -w "health HTTP=%{http_code}\n" "http://127.0.0.1:$port/v1/health" || true
+    curl -sS -m 2 -o /dev/null -w "docs  HTTP=%{http_code}\n" "http://127.0.0.1:$port/docs" || true
+  else
+    log "[ERR] api did not bind :$port. Tail log:"
+    tail -n 160 "$logfile" || true
+    return 1
+  fi
+}
+
+adopt() {
+  local lpid
+  lpid="$(listener_pid "$WEB_PORT")"
+  [[ -n "$lpid" ]] && write_pidfile "$WEB_LPIDFILE" "$lpid" || true
+  lpid="$(listener_pid "$API_PORT")"
+  [[ -n "$lpid" ]] && write_pidfile "$API_LPIDFILE" "$lpid" || true
+  log "[OK] adopt done (listener pidfiles refreshed)"
+}
+
+status() {
+  echo "TS_LOCAL=$(date -Is)"
+  echo "TS_UTC=$(date -u -Is)"
+  echo
+
+  echo "== LISTENERS =="
+  ss -ltnp 2>/dev/null | grep -E ":(3000|3001)\s" || echo "[INFO] no listeners on 3000/3001"
+
+  echo
+  echo "== DETECTED (by port) =="
+  echo "web :$WEB_PORT pid=$(listener_pid "$WEB_PORT" || true)"
+  echo "api :$API_PORT pid=$(listener_pid "$API_PORT" || true)"
+
+  echo
+  echo "== PIDFILES =="
+  for f in "$WEB_PIDFILE" "$WEB_LPIDFILE" "$API_PIDFILE" "$API_LPIDFILE"; do
+    [[ -f "$f" ]] || continue
+    pid="$(cat "$f" 2>/dev/null || true)"
+    echo "-- $(basename "$f") pid=${pid:-<empty>}"
+    [[ -n "${pid:-}" ]] && ps -p "$pid" -o pid=,ppid=,pgid=,etime=,cmd= || echo "   [INFO] not running"
+  done
+
+  echo
+  echo "== CURL sanity =="
+  curl -sS -m 2 -o /dev/null -w "web  / HTTP=%{http_code}\n"  "http://127.0.0.1:$WEB_PORT/" || true
+  curl -sS -m 2 -o /dev/null -w "api  health HTTP=%{http_code}\n" "http://127.0.0.1:$API_PORT/v1/health" || true
+}
+
+stop_one() {
+  local svc="$1" port="$2" pidfile="$3" lpidfile="$4" pattern="$5"
+
+  if [[ -f "$pidfile" ]]; then
+    pid="$(cat "$pidfile" 2>/dev/null || true)"
+    if pid_alive "$pid"; then
+      log "[STOP] $svc via pidfile pid=$pid"
+      kill_group "$pid"
+    else
+      log "[WARN] $svc pidfile exists but pid not running (pid=$pid)"
+    fi
+    rm -f "$pidfile" || true
+  fi
+
+  rm -f "$lpidfile" || true
+  sleep 0.4
+
+  # Port fallback (safe)
+  safe_kill_by_port "$svc" "$port" "$pattern" || true
+}
+
+stop_all() {
+  # Patterns are safety rails (avoid killing unrelated processes on those ports)
+  stop_one "web" "$WEB_PORT" "$WEB_PIDFILE" "$WEB_LPIDFILE" "(next|next-server|apps/web)"
+  stop_one "api" "$API_PORT" "$API_PIDFILE" "$API_LPIDFILE" "(apps/api|nest|dist/main|appsicologa\\.cl/apps/api)"
+  sleep 0.6
+  log "[OK] stop requested. Current listeners:"
+  ss -ltnp 2>/dev/null | grep -E ":(3000|3001)\s" || echo "[INFO] no listeners on 3000/3001"
+}
+
+usage() {
+  cat <<USAGE
+Usage: ./bin/devctl <command>
+
+Commands:
+  start        Start API + WEB (only if ports not listening)
+  start-api    Start only API
+  start-web    Start only WEB
+  adopt        Refresh listener pidfiles from ports
+  stop         Stop API + WEB (pidfile + safe port fallback)
+  status       Show listeners + detected pids + pidfiles + curl sanity
+USAGE
+}
+
+cmd="${1:-status}"
+case "$cmd" in
+  start)      start_api; start_web ;;
+  start-api)  start_api ;;
+  start-web)  start_web ;;
+  adopt)      adopt ;;
+  stop)       stop_all ;;
+  status)     status ;;
+  *)          usage; exit 2 ;;
+esac
