@@ -21,3 +21,19 @@ coverage/
 **/.env.*.local
 # pidfiles (if ever outside /var)
 *.pid
+var/secrets/
+
+# === appsicologa.cl (runtime/state) ===
+var/ai_cli/
+var/log/
+var/secrets/
+*.env
+*.env.*
+!.env.example
+
+# === python caches ===
+__pycache__/
+*.pyc
+
+# === node ===
+node_modules/
