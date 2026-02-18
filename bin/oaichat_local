@@ -1,0 +1,99 @@
+#!/usr/bin/env bash
+# appsicologa.cl — oaichat_local (Ollama) with repo context + state
+set -euo pipefail
+set +H 2>/dev/null || true   # desliga history expansion (evita "event not found" em terminais interativos)
+
+TS_LOCAL="$(date -Is)"
+TS_UTC="$(date -u -Is)"
+
+CONV="${1:-dev}"; shift || true
+MODEL="${OLLAMA_MODEL:-qwen2.5:7b}"
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+STATE_DIR="$REPO_ROOT/var/ai_cli"
+STATE_FILE="$STATE_DIR/${CONV}.json"
+PROJECT_STATE_FILE="$REPO_ROOT/docs/PROJECT_STATE.md"
+
+mkdir -p "$STATE_DIR"
+
+if ! command -v ollama >/dev/null 2>&1; then
+  echo "[ERR] ollama não encontrado. Instale e inicie o serviço."
+  exit 1
+fi
+
+msg="$*"
+if [[ -z "${msg//[[:space:]]/}" ]]; then
+  msg="$(cat || true)"
+fi
+if [[ -z "${msg//[[:space:]]/}" ]]; then
+  echo "[ERR] Mensagem vazia."
+  echo "Uso: ./bin/oaichat_local <conv> \"mensagem\""
+  exit 2
+fi
+
+project="$(cat "$PROJECT_STATE_FILE" 2>/dev/null || echo "(PROJECT_STATE.md não encontrado)")"
+
+prev=""
+if [[ -f "$STATE_FILE" ]]; then
+  prev="$(python3 -c 'import json,sys
+p=sys.argv[1]
+try:
+  d=json.load(open(p,"r",encoding="utf-8"))
+  print(d.get("summary","") or "")
+except Exception:
+  print("")' "$STATE_FILE" 2>/dev/null || true)"
+fi
+
+prompt="$(cat <<PROMPT
+Você é o copiloto interno do repositório appsicologa.cl.
+Regras: direto e técnico. Para infra/devops: 1 comando por vez.
+Idioma: PT-BR por padrão. Se o pedido for copy/UX público para Chile: es-CL.
+Segurança: não exponha segredos; não inclua PII/PHI.
+
+=== PROJECT_STATE.md (canônico) ===
+$project
+
+=== CONTEXTO (resumo curto) ===
+$prev
+
+=== PEDIDO DO USUÁRIO ===
+$msg
+
+Se o usuário pedir "SOLO el próximo comando" / "só o próximo comando" / "1 comando":
+- responda APENAS com 1 linha de comando bash (sem markdown, sem explicações, sem blocos de código).
+PROMPT
+)"
+
+echo "TS_LOCAL=$TS_LOCAL"
+echo "TS_UTC=$TS_UTC"
+echo "[INFO] conv=$CONV  model=$MODEL"
+echo
+
+out="$(ollama run "$MODEL" "$prompt")"
+
+# sanitiza quando o usuário quer só 1 comando
+clean="$out"
+if echo "$msg" | grep -qiE "solo el pr[oó]ximo comando|s[oó]lo el pr[oó]ximo comando|dame solo el pr[oó]ximo comando|1 comando|um comando|s[oó] o pr[oó]ximo comando"; then
+  fenced="$(printf "%s\n" "$out" | awk '/^```/{f=1-f; next} f{print}')"
+  if [[ -n "${fenced//[[:space:]]/}" ]]; then
+    clean="$fenced"
+  else
+    clean="$(printf "%s\n" "$out" | sed -e '/^```/d')"
+  fi
+  # pega só a primeira linha não-vazia
+  clean="$(printf "%s\n" "$clean" | sed -n '/[^[:space:]]/p' | head -n 1)"
+fi
+
+printf "%s\n" "$clean"
+
+# salva estado (summary rolling) via stdin — sem quebrar quoting
+python3 -c 'import json,sys,datetime
+state_file=sys.argv[1]; conv=sys.argv[2]
+out=sys.stdin.read()
+summary=(out or "").strip().replace("\r","")[-1200:]
+ts=datetime.datetime.now(datetime.timezone.utc).isoformat().replace("+00:00","Z")
+d={"conversationId":conv,"updatedAt":ts,"summary":summary}
+json.dump(d, open(state_file,"w",encoding="utf-8"), ensure_ascii=False, indent=2)' "$STATE_FILE" "$CONV" <<<"$clean"
+
+echo
+echo "[OK] state=$STATE_FILE"

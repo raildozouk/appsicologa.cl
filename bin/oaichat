@@ -1,0 +1,162 @@
+#!/usr/bin/env python3
+# appsicologa.cl — oaichat CLI (OpenAI Responses API)
+# State: var/ai_cli/<conversation>.json
+
+import argparse, json, os, re, sys, pathlib, urllib.request, urllib.error
+from datetime import datetime
+from getpass import getpass
+
+API_URL = "https://api.openai.com/v1/responses"
+
+def repo_root() -> pathlib.Path:
+    p = pathlib.Path.cwd().resolve()
+    for _ in range(12):
+        if (p / "pnpm-workspace.yaml").exists() or (p / ".git").exists():
+            return p
+        if p.parent == p:
+            break
+        p = p.parent
+    return pathlib.Path.cwd().resolve()
+
+def safe_id(s: str) -> str:
+    s = (s or "").strip() or "default"
+    s = re.sub(r"[^A-Za-z0-9_-]+", "_", s)
+    return (s[:120] or "default")
+
+def read_text(p: pathlib.Path) -> str:
+    try:
+        return p.read_text(encoding="utf-8")
+    except Exception:
+        return ""
+
+def state_path(root: pathlib.Path, conv: str) -> pathlib.Path:
+    return root / "var" / "ai_cli" / f"{safe_id(conv)}.json"
+
+def load_state(root: pathlib.Path, conv: str) -> dict:
+    p = state_path(root, conv)
+    if not p.exists():
+        return {"conversationId": conv}
+    try:
+        return json.loads(p.read_text(encoding="utf-8"))
+    except Exception:
+        return {"conversationId": conv}
+
+def save_state(root: pathlib.Path, conv: str, last_id: str):
+    d = root / "var" / "ai_cli"
+    d.mkdir(parents=True, exist_ok=True)
+    p = state_path(root, conv)
+    tmp = p.with_suffix(p.suffix + f".tmp.{os.getpid()}")
+    payload = {
+        "conversationId": conv,
+        "lastResponseId": last_id,
+        "updatedAt": datetime.utcnow().isoformat() + "Z",
+    }
+    tmp.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+    tmp.replace(p)
+
+def extract_text(resp: dict) -> str:
+    # API pode retornar output_text (SDK) ou output[] (HTTP raw). Tentamos ambos.
+    t = resp.get("output_text")
+    if isinstance(t, str) and t.strip():
+        return t.strip()
+
+    out = []
+    for item in (resp.get("output") or []):
+        if not isinstance(item, dict):
+            continue
+        for c in (item.get("content") or []):
+            if not isinstance(c, dict):
+                continue
+            if c.get("type") in ("output_text", "text") and isinstance(c.get("text"), str):
+                out.append(c["text"])
+    return ("\n".join(out)).strip()
+
+def call_openai(api_key: str, model: str, system: str, user: str, prev_id: str | None) -> dict:
+    payload = {
+        "model": model,
+        "truncation": "auto",
+        "input": [
+            {"role": "system", "content": system},
+            {"role": "user", "content": user},
+        ],
+    }
+    if prev_id:
+        payload["previous_response_id"] = prev_id
+
+    req = urllib.request.Request(
+        API_URL,
+        data=json.dumps(payload).encode("utf-8"),
+        headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=90) as r:
+            return json.loads(r.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        body = e.read().decode("utf-8", errors="replace")
+        raise SystemExit(f"[HTTP {e.code}] {body}")
+    except Exception as e:
+        raise SystemExit(f"[ERR] {e}")
+
+def main() -> int:
+    ap = argparse.ArgumentParser(prog="oaichat", description="OpenAI Responses CLI (stateful via previous_response_id).")
+    ap.add_argument("-c", "--conversation", default="default", help="ID da conversa (default: default)")
+    ap.add_argument("-m", "--model", default=os.getenv("OPENAI_MODEL", "gpt-4o-mini"), help="Modelo (env OPENAI_MODEL ou gpt-4o-mini)")
+    ap.add_argument("--reset", action="store_true", help="Apaga estado da conversa e sai")
+    ap.add_argument("--raw", action="store_true", help="Imprime JSON bruto em stderr")
+    ap.add_argument("message", nargs="*", help="Mensagem. Se vazio, lê stdin.")
+    args = ap.parse_args()
+
+    root = repo_root()
+    conv = (args.conversation or "").strip() or "default"
+
+    if args.reset:
+        p = state_path(root, conv)
+        if p.exists():
+            p.unlink()
+            print(f"[OK] reset: {p}")
+        else:
+            print("[OK] reset: no state file")
+        return 0
+
+    msg = " ".join(args.message).strip() or sys.stdin.read().strip()
+    if not msg:
+        print("ERRO: mensagem vazia.", file=sys.stderr)
+        return 2
+
+    api_key = (os.getenv("OPENAI_API_KEY") or "").strip()
+    if not api_key:
+        api_key = getpass("OPENAI_API_KEY (não será exibida): ").strip()
+    if not api_key:
+        print("ERRO: OPENAI_API_KEY não definida.", file=sys.stderr)
+        return 2
+
+    project_state = read_text(root / "docs" / "PROJECT_STATE.md").strip() or "(PROJECT_STATE.md não encontrado)"
+    system = "\n".join([
+        "Você é o copiloto interno do repositório appsicologa.cl.",
+        "Regras: direto e técnico; infra/devops: 1 comando por vez.",
+        "Idioma: PT-BR por padrão; copy/UX público Chile: es-CL.",
+        "Segurança: não exponha segredos; não inclua PII/PHI.",
+        "",
+        "=== PROJECT_STATE.md (canônico) ===",
+        project_state,
+    ])
+
+    st = load_state(root, conv)
+    prev_id = st.get("lastResponseId")
+
+    resp = call_openai(api_key, args.model, system, msg, prev_id if isinstance(prev_id, str) else None)
+    if args.raw:
+        print(json.dumps(resp, indent=2, ensure_ascii=False), file=sys.stderr)
+
+    rid = resp.get("id")
+    if isinstance(rid, str) and rid:
+        save_state(root, conv, rid)
+
+    text = extract_text(resp)
+    print(text if text else "(sem texto)")
+    return 0
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+
