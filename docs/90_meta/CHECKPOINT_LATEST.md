@@ -1,6 +1,6 @@
 # CHECKPOINT_LATEST — appsicologa.cl
-TS_LOCAL: 2026-02-17T20:42:54-03:00
-TS_UTC: 2026-02-17T23:42:54+00:00
+TS_LOCAL: 2026-02-17T23:38:02-03:00
+TS_UTC: 2026-02-18T02:38:02+00:00
 
 ## Serviços
 - nginx: active
@@ -41,12 +41,12 @@ Link 3 (wlxd03745c30241)
     Current Scopes: none
          Protocols: -DefaultRoute -LLMNR -mDNS -DNSOverTLS DNSSEC=no/unsupported
 
-Link 5 (br-56eb402ea5d0)
-    Current Scopes: none
+Link 4 (tailscale0)
+    Current Scopes: DNS
          Protocols: -DefaultRoute -LLMNR -mDNS -DNSOverTLS DNSSEC=no/unsupported
-
-Link 6 (docker0)
-    Current Scopes: none
+Current DNS Server: 100.100.100.100
+       DNS Servers: 100.100.100.100
+        DNS Domain: taild6aa5e.ts.net ~0.e.1.a.c.5.1.1.a.7.d.f.ip6.arpa
 
 ### resolvectl status (enp2s0 - resumo)
 Link 2 (enp2s0)
@@ -56,7 +56,7 @@ Current DNS Server: 1.1.1.1
        DNS Servers: 1.1.1.1 1.0.0.1
 
 ### resolvectl status (tailscale0 - resumo)
-Link 19 (tailscale0)
+Link 4 (tailscale0)
     Current Scopes: DNS
          Protocols: -DefaultRoute -LLMNR -mDNS -DNSOverTLS DNSSEC=no/unsupported
 Current DNS Server: 100.100.100.100
