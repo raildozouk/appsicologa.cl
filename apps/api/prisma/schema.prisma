@@ -1,0 +1,146 @@
+// appsicologa.cl — Prisma schema (MVP social marketplace)
+// TS_LOCAL: 2026-02-18
+// Nota (Prisma v7): DATABASE_URL é definido no prisma.config.ts (não aqui).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  PATIENT
+  PROFESSIONAL
+}
+
+model User {
+  id   String   @id @default(cuid())
+  role UserRole @default(PATIENT)
+
+  // público (paciente tem perfil mínimo)
+  username    String  @unique
+  displayName String
+  avatarUrl   String?
+
+  // perfis
+  professional ProfessionalProfile?
+  patient      PatientProfile?
+
+  // social
+  posts Post[] @relation("UserPosts")
+  likes Like[]
+
+  // perguntas públicas (2 relações para User -> Question)
+  questions     Question[] @relation("QuestionsByAsker") // feitas por mim
+  questionsToMe Question[] @relation("QuestionsToProfessional") // feitas para mim (se eu for profissional)
+
+  // follows
+  following Follow[] @relation("UserFollowing")
+  followers Follow[] @relation("UserFollowers")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ProfessionalProfile {
+  userId String @id
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  bio     String?
+  country String?
+  city    String?
+  address String?
+
+  // credenciais públicas
+  collegeRegNumber String?
+  universityName   String?
+  graduationYear   Int?
+  yearsExperience  Int?
+
+  specialties String[] @default([])
+  languages   String[] @default([])
+
+  consultationPriceClp Int?
+  consultationNotes    String?
+
+  isVerified Boolean   @default(false)
+  verifiedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model PatientProfile {
+  userId String @id
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  note String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Post {
+  id       String @id @default(cuid())
+  authorId String
+  author   User   @relation("UserPosts", fields: [authorId], references: [id], onDelete: Cascade)
+
+  content  String
+  mediaUrl String?
+  isPublic Boolean @default(true)
+
+  likes Like[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([authorId, createdAt])
+}
+
+model Like {
+  id     String @id @default(cuid())
+  userId String
+  postId String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, postId])
+  @@index([postId])
+}
+
+model Follow {
+  followerId  String
+  followingId String
+
+  follower  User @relation("UserFollowing", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("UserFollowers", fields: [followingId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@id([followerId, followingId])
+  @@index([followingId])
+}
+
+model Question {
+  id String @id @default(cuid())
+
+  professionalId String
+  professional   User   @relation("QuestionsToProfessional", fields: [professionalId], references: [id], onDelete: Cascade)
+
+  askerId String
+  asker   User   @relation("QuestionsByAsker", fields: [askerId], references: [id], onDelete: Cascade)
+
+  question String
+  answer   String?
+  isPublic Boolean @default(true)
+
+  createdAt  DateTime  @default(now())
+  answeredAt DateTime?
+
+  @@index([professionalId, createdAt])
+}
