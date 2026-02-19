@@ -1,6 +1,6 @@
 # CHECKPOINT_LATEST — appsicologa.cl
-TS_LOCAL: 2026-02-18T21:24:48-03:00
-TS_UTC: 2026-02-19T00:24:48+00:00
+TS_LOCAL: 2026-02-18T21:34:48-03:00
+TS_UTC: 2026-02-19T00:34:48+00:00
 
 ## Serviços
 - nginx: active
@@ -116,9 +116,5 @@ TS_UTC: 2026-02-17T14:06:03+00:00
 - ChatGPT guia arquitetura/ordem/checklists.
 
 ## Git status (porcelain)
- M apps/api/package.json
- M apps/api/src/ai/ai.service.ts
- M apps/api/src/app.controller.ts
  M apps/api/src/db/prisma.service.ts
- M pnpm-lock.yaml
 
