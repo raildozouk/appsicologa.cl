@@ -1,62 +1,76 @@
-// appsicologa.cl — AI Service (OpenAI Responses API)
-// TS_LOCAL: 2026-02-18T01:21:25-03:00
-// TS_UTC: 2026-02-18T04:21:25+00:00
-import { Injectable } from "@nestjs/common";
-import OpenAI from "openai";
+// appsicologa.cl — AiService (Ollama-only)
+// TS_LOCAL: 2026-02-18
+// TS_UTC: 2026-02-18
+import "dotenv/config";
+import { Injectable, Logger, ServiceUnavailableException } from "@nestjs/common";
 import { randomUUID } from "crypto";
 import { AiChatDto } from "./dto/ai-chat.dto";
-import { AiStore } from "./ai.store";
-import { readProjectState } from "./ai.paths";
+
+type AnyMsg = { role?: string; content?: string };
+
+function buildPrompt(dto: any): string {
+  // Compat: suporta dto.message, dto.prompt, dto.messages[]
+  const msg = (dto?.message ?? dto?.prompt ?? "").toString().trim();
+
+  const messages: AnyMsg[] = Array.isArray(dto?.messages) ? dto.messages : [];
+  const history = messages
+    .map((m) => `${(m.role ?? "user").toString().toUpperCase()}: ${(m.content ?? "").toString()}`)
+    .join("\n")
+    .trim();
+
+  if (history) return history + (msg ? `\nUSER: ${msg}` : "") + "\nASSISTANT:";
+  if (msg) return `USER: ${msg}\nASSISTANT:`;
+  return "USER: Hola. Responde breve.\nASSISTANT:";
+}
 
 @Injectable()
 export class AiService {
-  private readonly client: OpenAI;
-  private readonly model: string;
+  private readonly logger = new Logger(AiService.name);
 
-  constructor(private readonly store: AiStore) {
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      // fail fast: better than running “half broken”
-      throw new Error("OPENAI_API_KEY is not set");
-    }
-    this.client = new OpenAI({ apiKey });
-    this.model = process.env.OPENAI_MODEL || "gpt-5";
+  private readonly ollamaUrl = process.env.OLLAMA_URL || "http://127.0.0.1:11434/api/generate";
+  private readonly ollamaModel = process.env.OLLAMA_MODEL || "qwen2.5:3b";
+
+  constructor() {
+    this.logger.log(`AI_PROVIDER=ollama url=${this.ollamaUrl} model=${this.ollamaModel}`);
   }
 
-  async chat(dto: AiChatDto): Promise<{ conversationId: string; responseId: string; text: string }> {
-    const conversationId = dto.conversationId?.trim() || randomUUID();
-    const prev = await this.store.load(conversationId);
+  // Método principal (mantém compat com controller atual)
+  async chat(dto: AiChatDto | any) {
+    const conversationId = dto?.conversationId || randomUUID();
+    const prompt = buildPrompt(dto);
 
-    const projectState = await readProjectState();
+    const body = {
+      model: this.ollamaModel,
+      prompt,
+      stream: false,
+      options: { num_predict: 256 },
+    };
 
-    const system =
-      [
-        "Você é o copiloto interno do repositório appsicologa.cl.",
-        "Regras de trabalho: resposta direta e técnica; para infra/devops: 1 comando por vez.",
-        "Idioma: PT-BR por padrão. Se o pedido for copy/UX público para Chile, responda em espanhol es-CL.",
-        "Segurança: não peça/exponha segredos; não inclua PII/PHI; trate dados internos como sensíveis.",
-        "",
-        "=== PROJECT_STATE.md (canônico) ===",
-        projectState || "(PROJECT_STATE.md não encontrado)",
-      ].join("\n");
-
-    const resp = await this.client.responses.create({
-      model: this.model,
-      truncation: "auto",
-      previous_response_id: prev?.lastResponseId,
-      input: [
-        { role: "system", content: system },
-        { role: "user", content: dto.message },
-      ],
+    const r = await fetch(this.ollamaUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
     });
 
-    const text = (resp as any).output_text || "";
-    await this.store.save({
-      conversationId,
-      lastResponseId: (resp as any).id,
-      updatedAt: new Date().toISOString(),
-    });
+    if (!r.ok) {
+      const t = await r.text().catch(() => "");
+      throw new ServiceUnavailableException(
+        `Ollama error: HTTP ${r.status} ${t}`.slice(0, 1200),
+      );
+    }
 
-    return { conversationId, responseId: (resp as any).id, text };
+    const j: any = await r.json();
+    const text = (j?.response ?? "").toString().trim();
+    if (!text) throw new ServiceUnavailableException("Ollama returned empty response.");
+
+    return { conversationId, provider: "ollama", model: this.ollamaModel, text };
+  }
+
+  // Aliases defensivos (se algum controller antigo chamar outro nome)
+  async generate(dto: any) {
+    return this.chat(dto);
+  }
+  async ask(dto: any) {
+    return this.chat(dto);
   }
 }
